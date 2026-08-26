@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # 银行客服智能体 API 服务
+  app:
+    build: .
+    container_name: customer-service-agent
+    ports:
+      - "8000:8000"
+    environment:
+      - CSA_OLLAMA_BASE_URL=http://ollama:11434
+      - CSA_OLLAMA_MODEL=llama3.2
+      - CSA_MILVUS_URI=/app/data/milvus.db
+      - CSA_API_HOST=0.0.0.0
+      - CSA_API_PORT=8000
+      - CSA_DEBUG=false
+    volumes:
+      - ./knowledge:/app/knowledge:ro
+      - ./data:/app/data
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Ollama LLM 服务
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
